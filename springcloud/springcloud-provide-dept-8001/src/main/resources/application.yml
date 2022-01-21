@@ -1,17 +1,14 @@
-server:
-  port: 8081
-#spring配置
-spring:
-  application:
-    name: springcloud-provide-dept
-  datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://localhost:3306/lvshop?serverTimezone=Asia/Shanghai&amp&useSSL=true&amp&useUnicode=true&amp&characterEncoding=utf-8
-    username: root
-    password: root
-    driver-class-name: org.gjt.mm.mysql.Driver
-#mybatis配置
-mybatis:
-  type-aliases-package: com.tuzhi.springcloud.api.pojo
-  mapper-locations: classpath:mybatis/mapper/*.xml
-  config-location: classpath:mybatis/mybatis-config.xml
+#server:
+#  port: 8081
+#spring:
+#  application:
+#    name: springcloud-provide-dept
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/db01?serverTimezone=Asia/Shanghai&amp&useSSL=true&amp&useUnicode=true&amp&characterEncoding=utf-8
+#    username: root
+#    password: root
+#    driver-class-name: org.gjt.mm.mysql.Driver
+#    type: com.alibaba.druid.pool.DruidDataSource
+#mybatis:
+#  type-aliases-package: com.tuzhi.springcloud.pojo
+#  mapper-locations: classpath:mybatis/mapper/*.xml
