@@ -17,7 +17,20 @@
     </properties>
 
     <dependencies>
-<!--        需要拿到实体类，所以需要导入springcloud-api模块-->
+<!--        Eureka-使当前的微服务可以注册到Eureka注册中心里面-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-eureka</artifactId>
+            <version>1.4.6.RELEASE</version>
+        </dependency>
+<!--        Eureka监控信息-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+
+        <!--        需要拿到实体类，所以需要导入springcloud-api模块-->
         <dependency>
             <groupId>com.tuzhi</groupId>
             <artifactId>springcloud-api</artifactId>
