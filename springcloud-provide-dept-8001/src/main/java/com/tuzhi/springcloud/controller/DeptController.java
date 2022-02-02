@@ -1,4 +1,4 @@
-package com.tuzhi.springcloud.Controller;
+package com.tuzhi.springcloud.controller;
 
 import com.tuzhi.springcloud.pojo.Dept;
 import com.tuzhi.springcloud.service.DeptService;

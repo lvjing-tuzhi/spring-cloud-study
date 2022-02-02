@@ -302,6 +302,120 @@ eureka.client.service-url.defaultZone=http://${eureka.instance.hostname}:${serve
    * 当网络稳定时，当前新的注册信息会被同步到其他节点中。
 2. 因此，Eureka可以很好的应对网络故障导致部分节点失去联系的情况，而不会像Zookeeper那样使整个注册服务瘫痪。
 
+# 3、Ribbon
+
+## 1、ribbon是什么
+
+1. Spring Cloud Ribbon是基于Netflix Ribbon实现的一套客户端负载均衡的工具。
+2. 简单的来说，Ribbon是NetFlix发布的开源项目，主要功能是提供客户端的软件负载均衡算法，将NetFlix的中间层连接在一起。Ribbon的客户端组件提供一系列完整的配置项如：连接超时、重试等等。简单的说，就是在配置文件中列出LoadBalancer（简称LB：负载均衡）后面所有的机器，Ribbon会自动的帮助你基于某种规则（如简单轮询，随机连接等等）去连接这些机器。我们也很容易使用Ribbon实现自定义的负载均衡算法。
+
+## 2、Ribbon能干嘛
+
+1. LB，即负载均衡（Load Balance），在微服务或分布式集群中经常用到的一种应用。
+2. 负载均衡简单的说就是将用户的请求平摊的分配到多个服务上，从而达到系统的HA（高可用）。
+3. 常用的负载均衡软件有Nginx，Lvs等等。
+4. dubbo、SpringCloud中均给我们提供了负载均衡，SpringCloud的负载均衡算法可以自定义。
+5. 负载均衡简单分离：
+   * 集中式LB：
+     * 即在服务的消费方和提供方之间使用独立的LB设施，如Nginx，由该设施负责把访问请求通过某种策略转发至服务的提供方！
+   * 进程式LB：
+     * 将LB逻辑集成到消费方，消费方从服务注册中心获知那些地址可用，然后自己再从这些地址中选出一个合适的服务器。
+     * Ribbon就属于进程内LB，它只是一个类库，集成于消费方进程，消费方通过它来获取服务提供的地址！
+
+## 3、使用
+
+#### 1、导入maven依赖
+
+```xml
+<!-- ribbon -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-ribbon</artifactId>
+            <version>1.4.6.RELEASE</version>
+        </dependency>
+<!--        Eureka客户端-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-eureka</artifactId>
+            <version>1.4.6.RELEASE</version>
+        </dependency>
+```
+
+#### 2、在启动器上加@EnableEurekaClient注解
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+public class DeptConsumer_80 {
+    public static void main(String[] args) {
+        SpringApplication.run(DeptConsumer_80.class,args);
+    }
+}
+```
+
+#### 3、编写配置
+
+> application.properties
+
+```properties
+#Eureka配置
+#不向Eureka注册自己
+eureka.client.register-with-eureka=false
+eureka.client.service-url.defaultZone=http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka,http://eureka7003.com:7003/eureka
+```
+
+#### 4、编写配置类加@LoadBalanced注解
+
+```java
+@Configuration
+public class ConfigBean {
+
+    @Bean
+    @LoadBalanced //    使用Ribbon实现负责均衡
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+#### 5、使用
+
+> 1. 使用Ribbon从1Eureka注册中心拿服务，地址是服务名
+> 2. public final static String URL_PRE = "http://SPRINGCLOUD-PROVIDE-DEPT/dept";
+
+```java
+@RestController
+@RequestMapping("/consumer")
+public class ConsumerController {
+
+    @Autowired
+    RestTemplate restTemplate;
+//    public final static String URL_PRE = "http://127.0.0.1:8001/dept";
+//    使用Ribbon从Eureka注册中心拿服务，地址是服务名
+    public final static String URL_PRE = "http://SPRINGCLOUD-PROVIDE-DEPT/dept";
+
+    @GetMapping("/list")
+    public List<Dept> list() {
+        return restTemplate.getForObject(URL_PRE+"/list",List.class);
+    }
+
+    @GetMapping("get/{id}")
+    public Dept get(@PathVariable("id") Long id) {
+        return restTemplate.getForObject(URL_PRE+"/get/"+id,Dept.class);
+    }
+
+    @PostMapping("/add")
+    public Boolean add(Dept dept) {
+        return restTemplate.postForObject(URL_PRE+"/add",dept,Boolean.class);
+    }
+
+}
+```
+
+## 4、自定义Ribbon策略
+
+1. 自定义策略的方法不能于启动类同级，要在启动类的上一级。
+2. 在启动类上引用自定义的方法@RibbonClient(name = "custom", configuration = CustomConfiguration.class)
 
 
 
@@ -322,4 +436,23 @@ eureka.client.service-url.defaultZone=http://${eureka.instance.hostname}:${serve
 
 
 
-# 项目地址：https://gitee.com/tuzhilv/spring-cloud-study
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+项目地址：https://gitee.com/tuzhilv/spring-cloud-study

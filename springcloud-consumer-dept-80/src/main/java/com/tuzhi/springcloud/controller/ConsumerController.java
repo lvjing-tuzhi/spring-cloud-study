@@ -20,7 +20,9 @@ public class ConsumerController {
 
     @Autowired
     RestTemplate restTemplate;
-    public final static String URL_PRE = "http://127.0.0.1:8001/dept";
+//    public final static String URL_PRE = "http://127.0.0.1:8001/dept";
+//    使用Ribbon从Eureka注册中心拿服务，地址是服务名
+    public final static String URL_PRE = "http://SPRINGCLOUD-PROVIDE-DEPT/dept";
 
     @GetMapping("/list")
     public List<Dept> list() {
