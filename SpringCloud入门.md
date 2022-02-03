@@ -510,6 +510,231 @@ public class ConsumerController {
 }
 ```
 
+# 5、Hystrix
+
+## 1、服务雪崩
+
+1. 多个微服务之间调用的时候，假设微服务A调用微服务B和微服务C，微服务B和微服务C又调用其他的微服务，这就是所谓的“扇出”、如果扇出的链路上某个微服务的调用响应时间过长或者不可用，对微服务A的调用就会占用越来越多的系统资源，进而引起系统的崩溃，所谓的“雪崩效应”。
+2. 对于高流量的应用来说，单一的后端依赖可能会导致所有服务器上的所有资源都在几秒中内饱和。比失败更糟糕的是，这些应用程序还可能导致服务之间的延迟增加，备份队列，线程和其他系统资源紧张，导致整个系统发生更多的级联故障，这些都需要对故障和延迟进行隔离和管理，以便单个依赖的失败，不能取消整个应用程序或者系统。
+
+## 2、什么是Hystrix
+
+1. Hystrix是一个用于处理分布式系统的延迟和容错的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时，异常等，Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服务失败，避免级联故障，以提高分布式系统的弹性。
+2. “断路器”本身是一种开关装置，当某个服务单元发生故障之后，通过断路器的故障监控（类似熔断保险丝），向调用方返回一个服务预期的，可处理的备选响应（FallBack），而不是长时间的等待或者抛出调用方法无法处理的异常，这样就可以保证服务调用方的线程不会被长时间占用，从而避免了故障在分布式系统中的蔓延，乃至雪崩。
+
+## 3、能干嘛
+
+1. 服务熔断
+
+2. 服务降级
+
+3. 服务限流
+
+4. 接近实时的监控
+
+   。。。。
+
+## 4、使用
+
+1. 导入maven依赖
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   ```
+
+2. 在启动类上开启支持
+
+   > ```java
+   > @EnableCircuitBreaker
+   > ```
+
+```java
+@SpringBootApplication
+//开启Eureka支持,服务启动后自动注册
+@EnableEurekaClient
+//配置的信息，得到具体的微服务信息
+@EnableDiscoveryClient
+//添加对Hystrix熔断器的支持
+@EnableCircuitBreaker
+public class DeptProvider_Hystrix_8001 {
+    public static void main(String[] args) {
+        SpringApplication.run(DeptProvider_Hystrix_8001.class,args);
+    }
+}
+```
+
+3. 使用
+
+   > 使用@HystrixCommand(fallbackMethod = "hystrixGet")注解判定备选方案，服务出问题时回掉哪个方法
+
+```java
+    @GetMapping("/get/{id}")
+    @HystrixCommand(fallbackMethod = "hystrixGet")
+    public Dept get(@PathVariable("id") Long id) {
+        Dept dept = deptService.queryById(id);
+        if (dept == null) {
+            throw new RuntimeException("id不存在");
+        }
+        return dept;
+    }
+
+//    get请求崩的备选方案
+    public Dept hystrixGet(@PathVariable("id") Long id) {
+        return new Dept().setDeptno(id).setDname("数据库不存在姓名").setDb_source("不存在该数据库");
+    }
+```
+
+## 5、服务降级
+
+> 当某一时刻高并发时，关闭某一块服务或者转移某一块服务，叫做服务降级
+
+1. 自定以一个服务降级后的回调类，继承FallbackFactory
+
+   ```2java
+   @Component
+   public class DeptClientServerFallbackFactory implements FallbackFactory {
+       @Override
+       public Object create(Throwable throwable) {
+           return new DeptClientServer() {
+               @Override
+               public List&lt;Dept&gt; queryAll() {
+                   return null;
+               }
+   
+               @Override
+               public Dept queryById(long id) {
+                   return new Dept().setDname(&quot;服务降级了&quot;);
+               }
+   
+               @Override
+               public boolean addDept(Dept dept) {
+                   return false;
+               }
+           };
+       }
+   }
+   ```
+
+2. 在需要设置降级的类上加注解@FeignClient(value = "SPRINGCLOUD-PROVIDE-DEPT",fallbackFactory = DeptClientServerFallbackFactory.class)
+
+   ```java
+   @FeignClient(value = "SPRINGCLOUD-PROVIDE-DEPT",fallbackFactory = DeptClientServerFallbackFactory.class)
+   public interface DeptClientServer {
+       @GetMapping("/dept/list")
+       List<Dept> queryAll();
+       @GetMapping("/dept/get/{id}")
+       Dept queryById(@PathVariable("id") long id);
+       @PostMapping("/dept/add")
+       boolean addDept(Dept dept);
+   }
+   ```
+
+## 6、dashboard监控
+
+> 实时监控服务使用情况，健康等
+
+### 1、监控服务
+
+1. 导入maven依赖
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix-dashboard</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   ```
+
+2. application.properties配置端口号
+
+   ```properties
+   server.port=9001
+   ```
+
+3. 开启支持
+
+   > ```
+   > 在启动类上加注解@EnableHystrixDashboard
+   > ```
+
+```java
+@SpringBootApplication
+//开启dashboard监控
+@EnableHystrixDashboard
+public class HystrixDashboard_9001 {
+    public static void main(String[] args) {
+        SpringApplication.run(HystrixDashboard_9001.class,args);
+    }
+}
+```
+
+### 2、加入监控
+
+> 哪个服务要加入到被监控行列，就进行哪个服务的相关配置
+
+1. 导入maven依赖
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-actuator</artifactId>
+   </dependency>
+   ```
+
+2. 配置
+
+   > ```java
+   > //    加入到dashboard监控中
+   >     @Bean
+   >     public ServletRegistrationBean a() {
+   >         ServletRegistrationBean registrationBean = new ServletRegistrationBean(new HystrixMetricsStreamServlet());
+   >         registrationBean.addUrlMappings("/actuator/hystrix.stream");
+   >         return registrationBean;
+   >     }
+   > ```
+
+   ```java
+   @SpringBootApplication
+   //开启Eureka支持,服务启动后自动注册
+   @EnableEurekaClient
+   //配置的信息，得到具体的微服务信息
+   @EnableDiscoveryClient
+   //添加对Hystrix熔断器的支持
+   @EnableCircuitBreaker
+   public class DeptProvider_Hystrix_8001 {
+       public static void main(String[] args) {
+           SpringApplication.run(DeptProvider_Hystrix_8001.class,args);
+       }
+   
+   //    加入到dashboard监控中
+       @Bean
+       public ServletRegistrationBean a() {
+           ServletRegistrationBean registrationBean = new ServletRegistrationBean(new HystrixMetricsStreamServlet());
+           registrationBean.addUrlMappings("/actuator/hystrix.stream");
+           return registrationBean;
+       }
+   }
+   ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 

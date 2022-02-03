@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tuzhi.springcloud.dao.DeptDao">
+    <select id="queryAll" resultType="Dept">
+        select * from dept
+    </select>
+    <select id="queryById" resultType="Dept">
+        select * from dept where deptno = #{id}
+    </select>
+    <insert id="addDept" parameterType="Dept">
+        insert into dept (dname,db_source)
+        values (#{dname},'db01');
+    </insert>
+</mapper>

@@ -16,7 +16,7 @@ import java.util.List;
  * @create: 2022-02-03 13:42
  **/
 
-@FeignClient(value = "SPRINGCLOUD-PROVIDE-DEPT")
+@FeignClient(value = "SPRINGCLOUD-PROVIDE-DEPT",fallbackFactory = DeptClientServerFallbackFactory.class)
 public interface DeptClientServer {
     @GetMapping("/dept/list")
     List<Dept> queryAll();
