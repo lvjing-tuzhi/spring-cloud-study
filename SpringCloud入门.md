@@ -417,15 +417,98 @@ public class ConsumerController {
 1. 自定义策略的方法不能于启动类同级，要在启动类的上一级。
 2. 在启动类上引用自定义的方法@RibbonClient(name = "custom", configuration = CustomConfiguration.class)
 
+# 4、Feign
 
+## 1、Feign是什么
 
+1. feign是声明式的web service客户端，它让微服务之间的调用变得更简单了，类似controller调用service。SpringCloud集成了Ribbon和Eureka，可在使用Feign时提供负载均衡的http客户端。
+2. 只需要创建一个接口，添加注释即可，这个接口去注册中心拿数据。
+3. 调用微服务访问的两种方法：
+   * 微服务名字（Ribbon）
+   * 接口和注解（Feign）
 
+## 2、Feign能干什么
 
+1. Feign旨在使编写Java Http客户端变得更容易。
+2. 前面在使用Ribbon+RestTemplate时，利用RestTemplate对Http请求的封装处理，形成了一套模块化的调用方法。但是在实际开发中，由于对服务依赖的调用肯呢个不止一处，往往一个接口会被多处调用，所以，Feign在此基础上做了进一步封装，由他来帮助我们定义和实现依赖服务接口的定义，在Feign的实现下，我们只需要创建一个接口并使用注解的方式来配置它（类似于以前Dao接口上标注Mapper注解，现在是一个微服务接口上面标志一个Feign注解即可。）即可完成对服务提供方的接口绑定，简化了使用Spring Cloud Ribbon时，自动封装服务调用客户端的开发量。
+3. Feign还集成了Ribbon，并且通过轮询实现类客户端的负载均衡。
 
+## 3、使用
 
+1. 导入maven依赖
 
+   ```xml
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-feign</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   ```
 
+2. 编写接口并且加注解
 
+   > @FeignClient(value = "注册中心的服务名")
+
+   ```java
+   @FeignClient(value = "SPRINGCLOUD-PROVIDE-DEPT")
+   public interface DeptClientServer {
+       @GetMapping("/dept/list")
+       List<Dept> queryAll();
+       @GetMapping("/dept/get/{id}")
+       Dept queryById(@PathVariable("id") long id);
+       @PostMapping("/dept/add")
+       boolean addDept(Dept dept);
+   }
+   ```
+
+3. 在启动类上启动Feign
+
+   > 在哪个模块使用，则在哪个模块启动类上加@EnableFeignClients
+
+   ```java
+   @SpringBootApplication
+   @EnableEurekaClient
+   @EnableFeignClients(basePackages = {"com.tuzhi.springcloud"})
+   public class DeptConsumer_feign_80 {
+       public static void main(String[] args) {
+           SpringApplication.run(DeptConsumer_feign_80.class,args);
+       }
+   }
+   ```
+
+4. 使用
+
+   > 1. 使用@Autowired注入接口
+   >
+   > 2. @AutoWired
+   >
+   >    private DeptClientServer server;
+
+```java
+@RestController
+@RequestMapping("/consumer")
+public class ConsumerController {
+
+    @Autowired
+    private DeptClientServer server;
+
+    @GetMapping("/list")
+    public List<Dept> list() {
+        return server.queryAll();
+    }
+
+    @GetMapping("get/{id}")
+    public Dept get(@PathVariable("id") Long id) {
+        return server.queryById(id);
+    }
+
+    @PostMapping("/add")
+    public Boolean add(Dept dept) {
+        return server.addDept(dept);
+    }
+
+}
+```
 
 
 

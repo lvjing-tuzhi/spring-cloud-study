@@ -15,6 +15,7 @@
         <module name="springcloud-eureka-7003" />
         <module name="springcloud-eureka-7002" />
         <module name="springcloud-eureka-7001" />
+        <module name="springcloud-consumer-dept-feign-80" />
       </profile>
     </annotationProcessing>
   </component>
