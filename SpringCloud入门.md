@@ -1,3 +1,5 @@
+> 项目地址：https://gitee.com/tuzhilv/spring-cloud-study
+
 # 1、Rest方式
 
 ## 1、服务提供者
@@ -733,40 +735,139 @@ public class HystrixDashboard_9001 {
 2. 其中路由功能负载将外部请求转发到具体的微服务实例上，是实现外部访问统一入口的基础，而过滤器功能则负责对请求的处理过程进行干预，是实现请求校验，服务聚合等功能的基础。Zuul和Eureka进行整合，将Zuul自身注册为Eureka服务治理下的应用，同时从Eureka中获得其他微服务的消息，也即以后的访问微服务都是通过Zuul跳转后获得。
 3. Zuul服务也是注册进Eureka注册中心。
 
+## 2、使用
 
+1. 导入maven依赖
 
+   ```java
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-zuul</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-eureka</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   ```
 
+2. 配置
 
+   > application.properties
 
+   ```properties
+   #Eureka配置
+   eureka.client.service-url.defaultZone=http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka,http://eureka7003.com:7003/eureka
+   eureka.instance.instance-id=zuul-9527
+   #Eureka配置该微服务的信息
+   info.app.name=zuul-9527
+   info.company=tuzhi
+   #Zuul路由配置
+   #使用自定义路由代替原来的路由
+   zuul.routes.mydept.service-id=springcloud-provide-dept
+   zuul.routes.mydept.path=/mydept/**
+   #隐藏路由
+   zuul.ignored-services="springcloud-provide-dept"
+   ```
 
+# 7、Config-server（远程配置）
 
+> 把配置放在gitee或者github上，远程进行读取配置文件。
+>
+> 服务端连接get，然后在客户端连接服务端使用，读取。
 
+## 1、服务端
 
+1. 导入maven依赖
 
+   ```xml
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-config-server</artifactId>
+       <version>2.0.5.RELEASE</version>
+   </dependency>
+   ```
 
+2. 配置
 
+   > application.yml
 
+```yml
+server:
+  port: 3344
+spring:
+  application:
+    name: springcloud-config-server
+  cloud:
+    config:
+      server:
+        git:
+#          git仓库地址
+          uri: https://gitee.com/tuzhilv/springcloud-config-server.git
+```
 
+3. 开启支持
 
+   > 在启动类上加注解@EnableConfigServer
 
+```java
+@SpringBootApplication
+@EnableConfigServer
+public class ConfigServer_3344 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigServer_3344.class,args);
+    }
+}
+```
 
+4. 测试
 
+   路由访问http://127.0.0.1:3344/application-dev.yml
 
+## 2、使用（客户端）
 
+1. 导入maven依赖
 
+   ```xml
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-config</artifactId>
+       <version>2.0.5.RELEASE</version>
+   </dependency>
+   ```
 
+2. 创建bootstrap.yml配置文件
 
+   ```yml
+   #bootstrap是系统级别的配置，application是用户级别的配置
+   spring:
+     cloud:
+       config:
+   #      需要从资源上读取的资源名，不需要后缀名
+         name: config-client
+         profile: dev
+   #      分支
+         label: master
+   #      服务端地址
+         uri: http://127.0.0.1:3344
+   ```
 
+3. 测试
 
-
-
-
-
-
-
-
-
-
-
-
-项目地址：https://gitee.com/tuzhilv/spring-cloud-study
+   ```java
+   @RestController
+   public class Test {
+   
+   //    读取配置文件的数据
+       @Value("${spring.application.name}")
+       String port;
+       @Value("${eureka.client.service-url.defaultZone}")
+       String eureka;
+   
+       @GetMapping("/config")
+       public String config() {
+           return "port: "+port+" eureka"+eureka;
+       }
+   }
+   ```

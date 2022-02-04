@@ -1,0 +1,11 @@
+#bootstrap是系统级别的配置，application是用户级别的配置
+spring:
+  cloud:
+    config:
+#      需要从资源上读取的资源名，不需要后缀名
+      name: config-client
+      profile: dev
+#      分支
+      label: master
+#      服务端地址
+      uri: http://127.0.0.1:3344

@@ -1,0 +1,11 @@
+server:
+  port: 3344
+spring:
+  application:
+    name: springcloud-config-server
+  cloud:
+    config:
+      server:
+        git:
+#          git仓库地址
+          uri: https://gitee.com/tuzhilv/springcloud-config-server.git
